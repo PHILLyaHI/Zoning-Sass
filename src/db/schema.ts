@@ -32,6 +32,7 @@ export const users = pgTable("users", {
   trialEndsAt: timestamp("trial_ends_at"),
   currentPeriodEnd: timestamp("current_period_end"),
   stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
+  creditsBalance: integer("credits_balance").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -269,12 +270,115 @@ export const hazardZones = pgTable("hazard_zones", {
 });
 
 // ============================================
+// JURISDICTION REGISTRY (Nationwide Coverage)
+// ============================================
+
+export const jurisdictionRegistry = pgTable("jurisdiction_registry", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  state: varchar("state", { length: 2 }).notNull(),
+  county: varchar("county", { length: 255 }),
+  city: varchar("city", { length: 255 }),
+  jurisdictionType: varchar("jurisdiction_type", { length: 50 }).notNull(), // state | county | city | unincorporated | special_district
+  coverageLevel: integer("coverage_level").default(0).notNull(), // 0-4
+  parentId: uuid("parent_id"),
+  boundaryGeojson: json("boundary_geojson"),
+  // Coverage flags
+  hasParcels: boolean("has_parcels").default(false),
+  hasZoningPolygons: boolean("has_zoning_polygons").default(false),
+  hasRulesStructured: boolean("has_rules_structured").default(false),
+  hasEnvironmentalLayers: boolean("has_environmental_layers").default(false),
+  hasUtilityServiceAreas: boolean("has_utility_service_areas").default(false),
+  hasSepticRules: boolean("has_septic_rules").default(false),
+  // Sources and metadata
+  authoritativeSources: json("authoritative_sources").$type<{ name: string; url: string; type: string }[]>(),
+  updateCadence: varchar("update_cadence", { length: 50 }), // daily | weekly | monthly | quarterly
+  lastUpdated: timestamp("last_updated"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  stateIdx: index("jurisdiction_registry_state_idx").on(table.state),
+  coverageIdx: index("jurisdiction_registry_coverage_idx").on(table.coverageLevel),
+  typeIdx: index("jurisdiction_registry_type_idx").on(table.jurisdictionType),
+}));
+
+export const coverageRequests = pgTable("coverage_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  address: text("address").notNull(),
+  jurisdictionId: uuid("jurisdiction_id"),
+  intendedUse: varchar("intended_use", { length: 100 }), // buying | building | investing | other
+  email: varchar("email", { length: 255 }),
+  status: varchar("status", { length: 50 }).default("pending"), // pending | reviewed | planned | completed
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const dataConnectors = pgTable("data_connectors", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  jurisdictionId: uuid("jurisdiction_id").references(() => jurisdictionRegistry.id),
+  datasetType: varchar("dataset_type", { length: 100 }).notNull(), // parcels | zoning | environmental | utilities | soils
+  providerName: varchar("provider_name", { length: 255 }).notNull(),
+  providerType: varchar("provider_type", { length: 50 }), // government_gis | curated_provider | derived
+  config: json("config"), // connection params, API keys, URLs
+  priority: integer("priority").default(0), // higher = preferred
+  lastSync: timestamp("last_sync"),
+  syncStatus: varchar("sync_status", { length: 50 }).default("idle"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  jurisdictionIdx: index("data_connectors_jurisdiction_idx").on(table.jurisdictionId),
+  datasetIdx: index("data_connectors_dataset_idx").on(table.datasetType),
+}));
+
+// ============================================
+// CREDITS & SNAPSHOTS (Carfax Model)
+// ============================================
+
+export const creditTransactions = pgTable("credit_transactions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  type: varchar("type", { length: 50 }).notNull(), // purchase | usage | admin_adjustment | refund
+  creditsDelta: integer("credits_delta").notNull(), // positive = add, negative = deduct
+  amountUsd: real("amount_usd"), // nullable — only set for purchases
+  packName: varchar("pack_name", { length: 100 }), // e.g. "Starter", "Investor Pack"
+  snapshotRunId: uuid("snapshot_run_id"), // links to snapshot_runs if type=usage
+  metadata: json("metadata"), // { address, stripe_payment_id, etc. }
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("credit_transactions_user_idx").on(table.userId),
+  typeIdx: index("credit_transactions_type_idx").on(table.type),
+}));
+
+export const snapshotRuns = pgTable("snapshot_runs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  address: text("address").notNull(),
+  addressNormalized: text("address_normalized"),
+  city: varchar("city", { length: 255 }),
+  state: varchar("state", { length: 2 }),
+  county: varchar("county", { length: 255 }),
+  centroidLat: real("centroid_lat"),
+  centroidLng: real("centroid_lng"),
+  parcelGeojson: json("parcel_geojson"),
+  zoningDistrict: varchar("zoning_district", { length: 100 }),
+  jurisdictionName: varchar("jurisdiction_name", { length: 255 }),
+  snapshotData: json("snapshot_data"), // full snapshot result JSON
+  overallStatus: varchar("overall_status", { length: 20 }), // pass | warn | fail
+  creditTransactionId: uuid("credit_transaction_id"),
+  idempotencyKey: varchar("idempotency_key", { length: 255 }).unique(), // prevents double-charge
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("snapshot_runs_user_idx").on(table.userId),
+  addressIdx: index("snapshot_runs_address_idx").on(table.addressNormalized),
+  idempotencyIdx: index("snapshot_runs_idempotency_idx").on(table.idempotencyKey),
+}));
+
+// ============================================
 // RELATIONS
 // ============================================
 
 export const usersRelations = relations(users, ({ many }) => ({
   properties: many(properties),
   projects: many(projects),
+  creditTransactions: many(creditTransactions),
+  snapshotRuns: many(snapshotRuns),
 }));
 
 export const jurisdictionsRelations = relations(jurisdictions, ({ many, one }) => ({
@@ -327,6 +431,20 @@ export const structuresRelations = relations(structures, ({ one }) => ({
   project: one(projects, {
     fields: [structures.projectId],
     references: [projects.id],
+  }),
+}));
+
+export const creditTransactionsRelations = relations(creditTransactions, ({ one }) => ({
+  user: one(users, {
+    fields: [creditTransactions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const snapshotRunsRelations = relations(snapshotRuns, ({ one }) => ({
+  user: one(users, {
+    fields: [snapshotRuns.userId],
+    references: [users.id],
   }),
 }));
 

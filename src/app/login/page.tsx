@@ -13,10 +13,17 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Get redirect URL from query params
+  const getRedirectUrl = () => {
+    if (typeof window === "undefined") return "/app/properties";
+    const params = new URLSearchParams(window.location.search);
+    return params.get("redirect") || "/app/properties";
+  };
+
   // Redirect if already logged in
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.push("/app/properties");
+      router.push(getRedirectUrl());
     }
   }, [isAuthenticated, isLoading, router]);
 
@@ -24,7 +31,7 @@ export default function LoginPage() {
   const handleDevLogin = async () => {
     setSubmitting(true);
     await login("dev@test.com", "password");
-    router.push("/app/properties");
+    router.push(getRedirectUrl());
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -35,7 +42,7 @@ export default function LoginPage() {
     const result = await login(email, password);
     
     if (result.success) {
-      router.push("/app/properties");
+      router.push(getRedirectUrl());
     } else {
       setError(result.error || "Login failed. Please try again.");
       setSubmitting(false);

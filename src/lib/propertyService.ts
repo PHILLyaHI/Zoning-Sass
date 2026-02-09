@@ -227,7 +227,7 @@ export async function lookupProperty(address: string): Promise<PropertyRecord | 
       name: zoning.jurisdictionName,
       type: zoning.jurisdictionType as "city" | "county" | "township" | "special_district",
       stateCode: geocode.state,
-      dataQuality: zoning.source === "database" ? "complete" : "partial",
+      dataQuality: zoning.source === "database" ? "verified" : "partial" as const,
     } : undefined,
     
     zoningDistrict: zoning ? {
@@ -235,7 +235,7 @@ export async function lookupProperty(address: string): Promise<PropertyRecord | 
       jurisdictionId: zoning.jurisdictionId,
       code: zoning.districtCode,
       name: zoning.districtName,
-      category: zoning.category as PropertyRecord["zoningDistrict"]["category"],
+      category: (zoning.category || "residential_single") as "residential_single" | "residential_multi" | "commercial" | "industrial" | "agricultural" | "mixed_use" | "special" | "overlay",
       ordinanceSection: zoning.rules[0]?.ordinanceSection,
     } : undefined,
     
@@ -456,7 +456,7 @@ function getCoverageDetail(zoning: ZoningResult | null, parcel: ParcelResult | n
 
 function generateDefaultLayers(): LayerState[] {
   return [
-    { id: "parcel", label: "Parcel Boundaries", group: "base", active: true },
+    { id: "parcel", label: "Parcel Boundaries", group: "zoning", active: true },
     { id: "zoning", label: "Zoning Districts", group: "zoning", active: true },
     { id: "setbacks", label: "Setback Lines", group: "zoning", active: false },
     { id: "overlays", label: "Overlay Zones", group: "zoning", active: false },

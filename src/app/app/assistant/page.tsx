@@ -34,7 +34,7 @@ const generalProperty: PropertyRecord = {
   address: "General Questions",
   city: "",
   state: "",
-  zip: "",
+  zipCode: "",
   centroid: { lat: 0, lng: 0 },
   createdAt: new Date(),
   updatedAt: new Date(),

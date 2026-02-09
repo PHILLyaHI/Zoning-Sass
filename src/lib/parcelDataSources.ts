@@ -255,17 +255,17 @@ async function getParcelFromCountyGIS(
       const geometry = esriToGeoJSON(feature.geometry);
       
       // Get area - try multiple field names
-      const areaSqft = attrs[config.areaField] || 
+      const areaSqft = (config.areaField ? attrs[config.areaField] : undefined) || 
                        attrs.GIS_SQ_FT || 
                        attrs.SHAPE_Area || 
                        (attrs.GIS_ACRES ? attrs.GIS_ACRES * 43560 : 43560);
       
-      console.log(`[County GIS ${countyFips}] Found: ${attrs[config.addressField]}, ${(areaSqft / 43560).toFixed(2)} acres`);
+      console.log(`[County GIS ${countyFips}] Found: ${config.addressField ? attrs[config.addressField] : 'unknown'}, ${(areaSqft / 43560).toFixed(2)} acres`);
       
       return {
-        apn: attrs[config.apnField],
-        address: attrs[config.addressField],
-        owner: attrs[config.ownerField],
+        apn: config.apnField ? attrs[config.apnField] : undefined,
+        address: config.addressField ? attrs[config.addressField] : undefined,
+        owner: config.ownerField ? attrs[config.ownerField] : undefined,
         areaSqft: areaSqft,
         areaAcres: areaSqft / 43560,
         geometry,

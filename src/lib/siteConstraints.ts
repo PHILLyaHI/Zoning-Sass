@@ -141,7 +141,7 @@ export function generateMockSiteConstraints(property: PropertyRecord): SiteConst
   }
   
   // Create a unique seed from the full property ID + address + coordinates
-  const seedSource = `${property.id}-${property.address || ""}-${property.latitude || 0}-${property.longitude || 0}`;
+  const seedSource = `${property.id}-${property.address || ""}-${property.centroid?.lat || 0}-${property.centroid?.lng || 0}`;
   const baseSeed = hashString(seedSource);
   
   // Generate consistent random values for this specific property

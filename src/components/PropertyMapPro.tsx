@@ -66,8 +66,8 @@ export default function PropertyMapPro({
   
   const lotWidth = property.lotWidth || 100;
   const lotDepth = property.lotDepth || 150;
-  const lat = property.centroid?.lat || property.lat || 47.6062;
-  const lng = property.centroid?.lng || property.lng || -122.3321;
+  const lat = property.centroid?.lat || 47.6062;
+  const lng = property.centroid?.lng || -122.3321;
   
   // Generate parcel polygon
   const parcelPolygon = useMemo(() => 

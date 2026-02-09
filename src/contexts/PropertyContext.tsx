@@ -124,7 +124,7 @@ export function PropertyProvider({ children }: { children: ReactNode }) {
   const toggleLayer = useCallback((layerId: string) => {
     if (!currentProperty) return;
     
-    const updatedLayers = currentProperty.layers.map((layer: LayerState) =>
+    const updatedLayers = (currentProperty.layers || []).map((layer: LayerState) =>
       layer.id === layerId ? { ...layer, active: !layer.active } : layer
     );
     

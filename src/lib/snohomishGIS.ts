@@ -183,7 +183,7 @@ export async function getParcelByLocation(lat: number, lng: number): Promise<Par
         yearBuilt: undefined, // Not in this layer
         landUseCode: attrs.USECODE?.split(" ")[0] || "",
         landUseDescription: attrs.USECODE || "",
-        geometry: esriToGeoJSON(feature.geometry),
+        geometry: esriToGeoJSON(feature.geometry) || undefined,
       };
     }
 
@@ -223,7 +223,7 @@ export async function getParcelByAPN(apn: string): Promise<ParcelData | null> {
         yearBuilt: undefined,
         landUseCode: attrs.USECODE?.split(" ")[0] || "",
         landUseDescription: attrs.USECODE || "",
-        geometry: esriToGeoJSON(feature.geometry),
+        geometry: esriToGeoJSON(feature.geometry) || undefined,
       };
     }
 
@@ -279,7 +279,7 @@ export async function getParcelByAddress(address: string): Promise<ParcelData | 
         yearBuilt: undefined,
         landUseCode: attrs.USECODE?.split(" ")[0] || "",
         landUseDescription: attrs.USECODE || "",
-        geometry: esriToGeoJSON(feature.geometry),
+        geometry: esriToGeoJSON(feature.geometry) || undefined,
       };
     }
 
@@ -316,7 +316,7 @@ export async function getZoningByLocation(lat: number, lng: number): Promise<Zon
         zoneName: attrs.ZONE_NAME || attrs.ZONE_DESC || attrs.DESCRIPTION || "",
         zoneDescription: attrs.ZONE_DESCRIPTION || attrs.FULL_DESC || "",
         jurisdiction: attrs.JURISDICTION || attrs.JURIS || "Snohomish County",
-        geometry: esriToGeoJSON(feature.geometry),
+        geometry: esriToGeoJSON(feature.geometry) || undefined,
       };
     }
 

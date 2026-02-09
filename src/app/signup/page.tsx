@@ -14,10 +14,17 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Get redirect URL from query params
+  const getRedirectUrl = () => {
+    if (typeof window === "undefined") return "/app/properties";
+    const params = new URLSearchParams(window.location.search);
+    return params.get("redirect") || "/app/properties";
+  };
+
   // Redirect if already logged in
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.push("/app/properties");
+      router.push(getRedirectUrl());
     }
   }, [isAuthenticated, isLoading, router]);
 
@@ -35,7 +42,7 @@ export default function SignupPage() {
     const result = await signup(email, password);
     
     if (result.success) {
-      router.push("/app/properties");
+      router.push(getRedirectUrl());
     } else {
       setError(result.error || "Signup failed. Please try again.");
       setSubmitting(false);
@@ -56,8 +63,8 @@ export default function SignupPage() {
         <Link href="/" className="inline-block mb-8 text-[#0071e3] text-[15px] font-light hover:underline">
           ← Back to home
         </Link>
-        <h1 className="text-[32px] font-light tracking-tight text-[#1d1d1f] mb-2">Start your free trial</h1>
-        <p className="text-[15px] text-[#86868b] font-light mb-8">14 days free. No credit card required.</p>
+        <h1 className="text-[32px] font-light tracking-tight text-[#1d1d1f] mb-2">Create your account</h1>
+        <p className="text-[15px] text-[#86868b] font-light mb-8">Get 2 free credits to run your first Risk Snapshots.</p>
         
         {error && (
           <div className="mb-6 p-4 rounded-[12px] bg-red-50 border border-red-200 text-red-700 text-[14px]">
@@ -105,7 +112,7 @@ export default function SignupPage() {
             disabled={submitting}
             className="w-full btn-primary py-3.5 text-[15px] font-medium active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {submitting ? "Creating account..." : "Start free trial"}
+            {submitting ? "Creating account..." : "Create account"}
           </button>
         </form>
         

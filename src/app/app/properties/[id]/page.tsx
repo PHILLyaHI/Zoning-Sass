@@ -543,10 +543,10 @@ function EditPropertyModal({
     property.areaSqft ? (property.areaSqft / 43560).toFixed(2) : "1"
   );
   const [lotWidth, setLotWidth] = useState<string>(
-    property.lotWidthFt?.toString() || "200"
+    property.lotWidth?.toString() || "200"
   );
   const [lotDepth, setLotDepth] = useState<string>(
-    property.lotDepthFt?.toString() || "200"
+    property.lotDepth?.toString() || "200"
   );
   const [zoneCode, setZoneCode] = useState<string>(
     property.zoningDistrict?.code || "R-5"
@@ -580,10 +580,13 @@ function EditPropertyModal({
     const updated: PropertyRecord = {
       ...property,
       areaSqft: sqft,
-      lotWidthFt: width,
-      lotDepthFt: depth,
+      lotWidth: width,
+      lotDepth: depth,
       parcelGeometry: newGeometry,
       zoningDistrict: {
+        id: property.zoningDistrict?.id || "zone-default",
+        jurisdictionId: property.zoningDistrict?.jurisdictionId || "default",
+        category: property.zoningDistrict?.category || "residential_single" as const,
         ...property.zoningDistrict,
         code: zoneCode,
         name: zoneCode,
